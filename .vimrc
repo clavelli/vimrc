@@ -9,6 +9,9 @@ set ruler
 " syntax duh
 syntax on
 
+" keep track of old commands
+set history=200
+
 " search with space
 map <space> /
 
@@ -33,12 +36,6 @@ map <C-j> <C-W>j
 map <C-k> <C-W>k
 map <C-h> <C-W>h
 map <C-l> <C-W>l
-
-" press q to find cursor
-hi CursorLine   cterm=NONE ctermbg=darkred ctermfg=white guibg=darkred guifg=white
-hi CursorColumn cterm=NONE ctermbg=darkred ctermfg=white guibg=darkred guifg=white
-map q :set cursorline! cursorcolumn!<CR>
-
 
 " tab spacing
 set tabstop=4
@@ -72,3 +69,5 @@ let g:ctrlp_custom_ignore = {
     \}
 
 set backspace=indent,eol,start
+
+set hls
