@@ -1,21 +1,16 @@
-
-
-" detect file changes automatically
-set autoread
-
-" show the position of the cursor
-set ruler
+source ~/vimrc/plugins/.vimrc
 
 " syntax duh
 syntax on
+
+set background=light
+colorscheme solarized
 
 " keep track of old commands
 set history=200
 
 " search with space
 map <space> /
-
-filetype plugin indent on
 
 set noexpandtab
 set smarttab
@@ -29,7 +24,6 @@ map k gk
 
 " line numbers
 set nu
-highlight LineNr ctermfg=blue
 
 " moving between windows
 map <C-j> <C-W>j
@@ -41,16 +35,9 @@ map <C-l> <C-W>l
 set tabstop=4
 set shiftwidth=4
 set softtabstop=4
-set expandtab
+set noexpandtab
 set ai " auto indent
 set si " smart indent
-
-
-""" Plugins and stuff """
-
-" Pathogen
-" execute pathogen#infect()
-" filetype plugin indent on
 
 " Syntastic
 let g:syntastic_objc_checkers = []
