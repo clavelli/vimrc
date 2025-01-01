@@ -4,7 +4,7 @@ source ~/brogramming/vimrc/plugins/.vimrc
 syntax on
 
 set background=light
-" colorscheme solarized
+colorscheme evening
 
 " keep track of old commands
 set history=200
@@ -41,23 +41,38 @@ set ai " auto indent
 set si " smart indent
 
 " Syntastic
-let g:syntastic_objc_checkers = []
-let g:syntastic_python_checkers = ['flake8']
-let g:syntastic_html_checkers = []
-let g:syntastic_auto_loc_list=1
-let g:syntastic_enable_signs=1
-let g:syntastic_check_on_wq=1
-"let g:syntastic_check_on_open=1
-" ctrl-s to close error window
-nnoremap <C-i> :SyntasticReset<CR>
+let g:ale_linters = { "python": ["ruff"] }
+let g:ale_fixers = { "python": ["ruff", "ruff_format"], "typescript": ["prettier"], "typescriptreact": ["prettier"], "html": ["eslint-plugin-jinja"] }
+let g:ale_python_ruff_options = "--config /Users/jason/beam/cinderblock/pyproject.toml"
+let g:ale_python_ruff_format_options = "--config /Users/jason/beam/cinderblock/pyproject.toml"
+" let g:ale_python_black_options = "-l 89"
+" let g:ale_completion_enabled = 1
+let g:ale_fix_on_save = 1
+" let g:syntastic_objc_checkers = []
+" let g:syntastic_python_checkers = ['flake8', 'semgrep']
+" let g:syntastic_python_semgrep_args = '--config=/Users/jason/beam/cinderblock/semgrep.yaml --severity=ERROR'
+" let g:syntastic_python_flake8_args='--ignore=F541,E741,W504,W503,Q003,E127'
+" " let g:syntastic_javascript_checkers=['tsc']
+" " let g:syntastic_typescriptreact_checkers=['tsc']
+" let g:syntastic_html_checkers = []
+" let g:syntastic_auto_loc_list=1
+" let g:syntastic_enable_signs=1
+" let g:syntastic_check_on_wq=1
+" "let g:syntastic_check_on_open=1
+" " ctrl-s to close error window
+" nnoremap <C-i> :SyntasticReset<CR>
 
 " CtrlP
 let g:ctrlp_map = '<c-p>'
 let g:ctrlp_cmd = 'CtrlP'
 let g:ctrlp_custom_ignore = {
-    \ 'file': ".pyc"
+    \ 'file': '\v(\.pyc|\.gitignore|\.DS_Store|\.swp)',
+    \ 'dir': '\v(node_modules|\.git|\.next)'
     \}
+let g:ctrlp_show_hidden = 1
 let g:ctrlp_max_height = 8
+
+nnoremap <C-z> :CtrlPClearAllCaches<CR>
 
 " Go
 let g:go_fmt_command = "goimports"
@@ -68,7 +83,12 @@ set backspace=indent,eol,start
 set hls
 
 " Grep
-nnoremap gr :!grep -rn --exclude="*/tests/*" --exclude="*.swp" --exclude="*.pyc" --exclude="*\.min\.*" <cword> *<CR>
+" replaced with :Rg
+" nnoremap gr :!grep -rn --exclude="*/.terraform/*" --exclude="*/tests/*" --exclude="node_modules/*" --exclude="*.swp" --exclude="*.pyc" --exclude="*\.min\.*" --exclude="*/\.next/*" --exclude="tsconfig.tsbuildinfo" <cword> *<CR>
+
+nnoremap gn :w <CR> :exe "!tmux send -t cb:test 'pytest -n0 " . expand('%') .  " ' Enter" <CR><CR> :exe "!tmux select-window -t cb:test" <CR><CR>
+nnoremap gb :w <CR> :exe "!tmux send -t cb:test 'pytest " . expand('%') .  " ' Enter" <CR><CR> :exe "!tmux select-window -t cb:test" <CR><CR>
+nnoremap gp Oprint(0)<esc>h
 
 " Fix commenting derp in python files
 au! FileType python setl nosmartindent
@@ -79,6 +99,16 @@ set visualbell
 
 source ~/brogramming/vimrc/abbreviations
 
-let mapleader = "q"
+" TODO I don't think mapleader works the way I think it does
+let mapleader = "g"
+nnoremap <leader>sc mxvis"*y'x
+
 nnoremap <leader>ev :vsplit ~/brogramming/vimrc/.vimrc<cr>
 nnoremap <leader>sv :source ~/brogramming/vimrc/.vimrc<cr>
+nnoremap <silent> <leader>fn :let @+ = expand("%")<cr>
+" open quickfix in new pane
+autocmd! FileType qf nnoremap <buffer> <leader><Enter> <C-w><Enter><C-w>L
+
+hi Search cterm=NONE ctermfg=white ctermbg=blue
+
+source ~/beam/vim-plugins/beamai.vim
