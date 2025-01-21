@@ -43,8 +43,8 @@ set si " smart indent
 " Syntastic
 let g:ale_linters = { "python": ["ruff"] }
 let g:ale_fixers = { "python": ["ruff", "ruff_format"], "typescript": ["prettier"], "typescriptreact": ["prettier"], "html": ["eslint-plugin-jinja"] }
-let g:ale_python_ruff_options = "--config /Users/jason/beam/cinderblock/pyproject.toml"
-let g:ale_python_ruff_format_options = "--config /Users/jason/beam/cinderblock/pyproject.toml"
+let g:ale_python_ruff_options = "--config /Users/jasonclavelli/brogramming/model/ruff.toml"
+let g:ale_python_ruff_format_options = "--config /Users/jasonclavelli/brogramming/model/ruff.toml"
 " let g:ale_python_black_options = "-l 89"
 " let g:ale_completion_enabled = 1
 let g:ale_fix_on_save = 1
@@ -73,9 +73,6 @@ let g:ctrlp_show_hidden = 1
 let g:ctrlp_max_height = 8
 
 nnoremap <C-z> :CtrlPClearAllCaches<CR>
-
-" Go
-let g:go_fmt_command = "goimports"
 
 set backspace=indent,eol,start
 
@@ -111,4 +108,46 @@ autocmd! FileType qf nnoremap <buffer> <leader><Enter> <C-w><Enter><C-w>L
 
 hi Search cterm=NONE ctermfg=white ctermbg=blue
 
-source ~/beam/vim-plugins/beamai.vim
+set rtp^="/Users/jasonclavelli/.opam/default/share/ocp-indent/vim"
+
+function! StartOfBlock(count) abort
+    let l:target_indent = a:count ? 4 * (a:count - 1) : 0
+    let l:start = line('.')
+    while l:start > 1 && (getline(l:start) == '' || indent(l:start) > l:target_indent)
+        let l:start -= 1
+    endwhile
+    while l:start >= 1 && getline(l:start) != '' && indent(l:start) == l:target_indent
+        let l:start -= 1
+    endwhile
+	let l:start += 1
+	return l:start
+endfunction
+
+function! EndOfBlock(count) abort
+    let l:target_indent = a:count ? 4 * (a:count - 1) : 0
+    let l:cursor = line('.')
+    let l:end = l:cursor
+    while l:end <= line('$') && (getline(l:end) == '' || indent(l:end) > l:target_indent)
+        let l:end += 1
+    endwhile
+	let l:end -= 1
+    while getline(l:end) == ''
+        let l:end -= 1
+    endwhile
+	return l:end
+endfunction
+
+
+function! IndentBlock(count) abort
+	let l:start = StartOfBlock(count)
+	let l:end = EndOfBlock(count)
+    execute 'normal! ' . l:start . 'G0V' . l:end . 'G$'
+endfunction
+
+onoremap <silent>ib :<c-u>call IndentBlock(v:count1)<cr>
+onoremap <silent>ab :<c-u>call IndentBlock(v:count1)<cr>
+xnoremap <silent>ib :<c-u>call IndentBlock(v:count1)<cr>
+xnoremap <silent>ab :<c-u>call IndentBlock(v:count1)<cr>
+
+
+" source ~/beam/vim-plugins/beamai.vim
