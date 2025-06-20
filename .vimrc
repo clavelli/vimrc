@@ -43,8 +43,8 @@ set si " smart indent
 " Syntastic
 let g:ale_linters = { "python": ["ruff"] }
 let g:ale_fixers = { "python": ["ruff", "ruff_format"], "typescript": ["prettier"], "typescriptreact": ["prettier"], "html": ["eslint-plugin-jinja"] }
-let g:ale_python_ruff_options = "--config /Users/jasonclavelli/brogramming/model/ruff.toml"
-let g:ale_python_ruff_format_options = "--config /Users/jasonclavelli/brogramming/model/ruff.toml"
+let g:ale_python_ruff_options = "--config /Users/jason/beam/cinderblock/pyproject.toml"
+let g:ale_python_ruff_format_options = "--config /Users/jason/beam/cinderblock/pyproject.toml"
 " let g:ale_python_black_options = "-l 89"
 " let g:ale_completion_enabled = 1
 let g:ale_fix_on_save = 1
@@ -83,8 +83,6 @@ set hls
 " replaced with :Rg
 " nnoremap gr :!grep -rn --exclude="*/.terraform/*" --exclude="*/tests/*" --exclude="node_modules/*" --exclude="*.swp" --exclude="*.pyc" --exclude="*\.min\.*" --exclude="*/\.next/*" --exclude="tsconfig.tsbuildinfo" <cword> *<CR>
 
-nnoremap gn :w <CR> :exe "!tmux send -t cb:test 'pytest -n0 " . expand('%') .  " ' Enter" <CR><CR> :exe "!tmux select-window -t cb:test" <CR><CR>
-nnoremap gb :w <CR> :exe "!tmux send -t cb:test 'pytest " . expand('%') .  " ' Enter" <CR><CR> :exe "!tmux select-window -t cb:test" <CR><CR>
 nnoremap gp Oprint(0)<esc>h
 
 " Fix commenting derp in python files
@@ -110,17 +108,21 @@ hi Search cterm=NONE ctermfg=white ctermbg=blue
 
 set rtp^="/Users/jasonclavelli/.opam/default/share/ocp-indent/vim"
 
-function! StartOfBlock(count) abort
+function! StartOfBlock(count, include_decorator) abort
     let l:target_indent = a:count ? 4 * (a:count - 1) : 0
     let l:start = line('.')
     while l:start > 1 && (getline(l:start) == '' || indent(l:start) > l:target_indent)
         let l:start -= 1
     endwhile
-    while l:start >= 1 && getline(l:start) != '' && indent(l:start) == l:target_indent
-        let l:start -= 1
-    endwhile
-	let l:start += 1
-	return l:start
+    if a:include_decorator
+        while l:start >= 1 && getline(l:start) != '' && indent(l:start) == l:target_indent
+            let l:start -= 1
+        endwhile
+	else
+		let l:start -= 1
+    endif
+    let l:start += 1
+    return l:start
 endfunction
 
 function! EndOfBlock(count) abort
@@ -130,24 +132,98 @@ function! EndOfBlock(count) abort
     while l:end <= line('$') && (getline(l:end) == '' || indent(l:end) > l:target_indent)
         let l:end += 1
     endwhile
-	let l:end -= 1
+    let l:end -= 1
     while getline(l:end) == ''
         let l:end -= 1
     endwhile
-	return l:end
+    return l:end
 endfunction
 
 
 function! IndentBlock(count) abort
-	let l:start = StartOfBlock(count)
-	let l:end = EndOfBlock(count)
+    let l:start = StartOfBlock(count, true)
+    let l:end = EndOfBlock(count)
     execute 'normal! ' . l:start . 'G0V' . l:end . 'G$'
 endfunction
 
-onoremap <silent>ib :<c-u>call IndentBlock(v:count1)<cr>
-onoremap <silent>ab :<c-u>call IndentBlock(v:count1)<cr>
-xnoremap <silent>ib :<c-u>call IndentBlock(v:count1)<cr>
-xnoremap <silent>ab :<c-u>call IndentBlock(v:count1)<cr>
+onoremap <silent>it :<c-u>call IndentBlock(1)<cr>
+onoremap <silent>at :<c-u>call IndentBlock(1)<cr>
+xnoremap <silent>it :<c-u>call IndentBlock(1)<cr>
+xnoremap <silent>at :<c-u>call IndentBlock(1)<cr>
+
+onoremap <silent>ih :<c-u>call IndentBlock(2)<cr>
+onoremap <silent>ah :<c-u>call IndentBlock(2)<cr>
+xnoremap <silent>ih :<c-u>call IndentBlock(2)<cr>
+xnoremap <silent>ah :<c-u>call IndentBlock(2)<cr>
+
+
+function! GetTestPath() abort
+    let path = expand('%')
+    let filename = expand('%:t')
+    if match(path, '^tests/') == 0
+        throw "Already in a test file"
+    endif
+    let test_filename = 'test_' . filename
+    return 'tests/' . substitute(path, filename, test_filename, '')
+endfunction
+
+function! GetCodePath() abort
+    let filename = expand('%:t')
+    let path = expand('%')
+    if match(filename, '^test_') != 0
+        throw "Not a test filename"
+    endif
+    if match(path, '^tests/') != 0
+        throw "Not in test dir"
+    endif
+    let code_filename = substitute(filename, '^test_', '', '')
+    let result = substitute(substitute(path, '^tests/', '', ''), filename, code_filename, '')
+    if !filereadable(result)
+        throw "Code file doesn't exist"
+    endif
+    return result
+endfunction
+
+function! GetTestName() abort
+    let line = getline(StartOfBlock(2, 0))
+    if match(line, '^    def test_') != 0
+        throw "Couldn't find function name"
+    endif
+    let matches = matchlist(line, '\(test_\w\+\)')
+    return matches[1]
+endfunction
+
+function! GetClassName() abort
+    let line = getline(StartOfBlock(1, 0))
+    if match(line, '^class ') != 0
+        throw "Couldn't find class name"
+    endif
+    let matches = matchlist(line, 'class \(\w\+\)')
+    return matches[1]
+endfunction
+
+function! GetTestClassCommand()
+	let l:className = GetClassName()
+    let l:path = expand('%')
+	return 'pt ' . l:path . '::' . l:className
+endfunction
+
+function! GetSingleTestCommand()
+	let l:className = GetClassName()
+	let l:testName = GetTestName()
+    let l:path = expand('%')
+	return 'pt ' . l:path . '::' . l:className . '::' . l:testName . ' -n0'
+endfunction
+
+nnoremap ,h :execute 'vsplit ' . GetTestPath()<CR>
+nnoremap ,t :execute 'vsplit ' . GetCodePath()<CR>
+"nnoremap ,n :execute 'let @+ = "' . GetTestClassCommand() . '"'<CR>
+"nnoremap ,s :execute 'let @+ = "' . GetSingleTestCommand() . '"'<CR>
+nnoremap ,n :w <CR> :exe "!tmux send -t cb:test '" . GetTestClassCommand() . "' Enter" <CR><CR>
+nnoremap ,s :w <CR> :exe "!tmux send -t cb:test '" . GetSingleTestCommand() . "' Enter" <CR><CR>
+" If we want to make these switch to the test window too, add the following
+" :exe "!tmux select-window -t cb:test" <CR><CR>
+
 
 
 " source ~/beam/vim-plugins/beamai.vim
